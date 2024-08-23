@@ -1,0 +1,12 @@
+{
+  "local": {
+    "github.com/turbot/steampipe-mod-aws-insights": {
+      "version": "0.21.0",
+      "name": "github.com/turbot/steampipe-mod-aws-insights",
+      "commit": "4b3d73db877aac4fc40845b78c3b9b46cabf7156",
+      "git_ref": "refs/tags/v0.21",
+      "struct_version": 20240429,
+      "alias": "aws_insights"
+    }
+  }
+}

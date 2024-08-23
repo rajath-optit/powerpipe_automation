@@ -112,9 +112,6 @@ In the `docker_powerpipe` directory, we have multiple Dockerfiles with different
    ```
 
 ---
-
-Feel free to adjust the documentation based on your specific setup and requirements.
-
 docker run --name my-steampipe-container \
 
   -e AWS_ACCESS_KEY_ID=AKIAZLCCFLSD6QBOA7EI\

@@ -1867,3 +1867,30 @@ source ~/.bashrc
 Each user is now set up to manage their AWS accounts independently. 
  
  
+outcome of experiment. 
+
+The challenges we've encountered with PowerPipe's multi-account setup, particularly the issues caused by port configuration changes that have consistently led to account overlapping. This problem arises when using PowerPipe with multiple accounts from the same cloud provider. Despite following all the recommended steps in the documentation, experimenting thoroughly, and seeking suggestions from the PowerPipe team on Slack, we've observed that the current solution does not reliably support a two-account configuration, even after adjusting the port settings. 
+
+ image 
+
+Key Findings: 
+
+One critical finding is that while a single machine can handle one AWS, one GCP, and one Azure account simultaneously, it cannot effectively manage two accounts from the same provider (e.g., two AWS accounts). When attempting this, we encountered overlapping issues where the generated report only reflects data from one of the accounts, rather than both. 
+
+  
+
+Separate Dashboards: During our experiments, we found a way to create separate dashboards for each module, which helped avoid overlapping reports. We did this by creating two users, installing the modules separately for each, and running the powerpipe server command with a different port for each user. This allowed us to generate reports for each module separately without any overlap. 
+
+  
+
+Best practice/recommandation 
+
+Given these consistent issues, we can suggest that it may be more effective to maintain separate instances of PowerPipe for each account. This approach could provide more stability and reduce the risk of cross-account configuration conflicts, ensuring that each instance operates independently without the problems we've experienced with the current multi-account setup. 
+
+  
+
+This recommendation is based on our extensive testing and experimentation, and we believe it will lead to a more reliable and manageable solution for all teams using PowerPipe. 
+
+Finally, we should present a detailed report of our findings to substantiate our recommendation and provide a clear path forward. 
+
+ 

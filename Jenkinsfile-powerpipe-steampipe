@@ -1,0 +1,165 @@
+#This Jenkinsfile automates the deployment of Powerpipe and Steampipe in Docker containers. It checks AWS credentials and port availability, creates or uses a Docker network, runs a container, installs modules, and starts the services for querying AWS data.
+pipeline {
+    agent { label 'agent93' }  // Assigns the job to run on 'agent93'
+
+    // Define parameters that can be set when triggering the job
+    parameters {
+        string(name: 'AWS_ACCESS_KEY_ID', defaultValue: '', description: 'AWS Access Key ID')  // AWS access key
+        string(name: 'AWS_SECRET_ACCESS_KEY', defaultValue: '', description: 'AWS Secret Access Key')  // AWS secret key
+        string(name: 'AWS_REGION', defaultValue: 'us-east-1', description: 'AWS Region')  // AWS region to use
+        string(name: 'STEAMPIPE_PORT', defaultValue: '9194', description: 'Port for Steampipe')  // Port for Steampipe service
+        string(name: 'POWERPIPE_PORT', defaultValue: '9040', description: 'Port for Powerpipe')  // Port for Powerpipe service
+        string(name: 'IMAGE_NAME', defaultValue: 'pp-sp-img', description: 'Docker image for Powerpipe and Steampipe')  // Docker image name
+        string(name: 'DOCKER_NETWORK', defaultValue: '', description: 'Docker Network Name (optional)')  // Docker network name (optional)
+        string(name: 'CONTAINER_NAME', defaultValue: '', description: 'Container Name (optional)')  // Docker container name (optional)
+    }
+
+    // Define environment variables for the pipeline, using parameters
+    environment {
+        AWS_ACCESS_KEY_ID = "${params.AWS_ACCESS_KEY_ID}"  // Setting AWS access key from parameters
+        AWS_SECRET_ACCESS_KEY = "${params.AWS_SECRET_ACCESS_KEY}"  // Setting AWS secret key from parameters
+        AWS_REGION = "${params.AWS_REGION}"  // Setting AWS region from parameters
+        STEAMPIPE_PORT = "${params.STEAMPIPE_PORT}"  // Setting Steampipe port from parameters
+        POWERPIPE_PORT = "${params.POWERPIPE_PORT}"  // Setting Powerpipe port from parameters
+        IMAGE_NAME = "${params.IMAGE_NAME}"  // Setting Docker image name from parameters
+        DOCKER_NETWORK = "${params.DOCKER_NETWORK ?: 'aws_default_network'}"  // Default Docker network if not specified
+        CONTAINER_NAME_BASE = "${params.CONTAINER_NAME ?: 'default_container'}"  // Default container name if not specified
+    }
+
+    stages {
+        stage('Check AWS Credentials') {
+            // Validate AWS credentials by running a simple AWS CLI command
+            steps {
+                script {
+                    def awsCheck = sh (
+                        script: "aws sts get-caller-identity --region ${AWS_REGION}",  // Checking AWS identity
+                        returnStatus: true
+                    )
+                    if (awsCheck != 0) {
+                        error "Invalid AWS Credentials"  // Fail the pipeline if credentials are invalid
+                    }
+                }
+            }
+        }
+
+        stage('Check Port Availability') {
+            // Ensure Steampipe and Powerpipe ports are available before proceeding
+            steps {
+                script {
+                    def isPortAvailable = { port ->  // Define function to check port availability
+                        def result = sh (
+                            script: "netstat -tuln | grep -q ':${port} '",  // Check if port is in use
+                            returnStatus: true
+                        )
+                        return result == 1  // Return true if port is available
+                    }
+
+                    if (!isPortAvailable(STEAMPIPE_PORT)) {
+                        error "Port ${STEAMPIPE_PORT} is already in use."  // Error if Steampipe port is occupied
+                    }
+
+                    if (!isPortAvailable(POWERPIPE_PORT)) {
+                        error "Port ${POWERPIPE_PORT} is already in use."  // Error if Powerpipe port is occupied
+                    }
+
+                    echo "Both Steampipe Port (${STEAMPIPE_PORT}) and Powerpipe Port (${POWERPIPE_PORT}) are available."  // Confirm port availability
+                }
+            }
+        }
+
+        stage('Create Docker Network') {
+            // Create a Docker network if it does not exist
+            steps {
+                script {
+                    def networkExists = sh (
+                        script: "docker network ls --filter name=${DOCKER_NETWORK} --format '{{.Name}}'",  // Check if network exists
+                        returnStdout: true
+                    ).trim()
+
+                    if (networkExists == "") {
+                        sh "docker network create ${DOCKER_NETWORK}"  // Create Docker network if it doesn't exist
+                        echo "Created Docker network: ${DOCKER_NETWORK}"  // Output success message
+                    } else {
+                        echo "Docker network already exists: ${DOCKER_NETWORK}"  // Network already exists message
+                    }
+                }
+            }
+        }
+
+        stage('Run Docker Container') {
+            // Launch the Docker container with the appropriate settings
+            steps {
+                script {
+                    def containerName = ""
+                    for (int i = 1; i <= 3; i++) {  // Loop to check for available container name
+                        def candidateName = "${CONTAINER_NAME_BASE}_${i}"  // Generate candidate container name
+                        def containerExists = sh (
+                            script: "docker ps -a --filter name=${candidateName} --format '{{.Names}}'",  // Check if container exists
+                            returnStdout: true
+                        ).trim()
+
+                        if (containerExists == "") {
+                            containerName = candidateName  // Use the first available container name
+                            break
+                        }
+                    }
+
+                    if (containerName == "") {
+                        error "All containers (${CONTAINER_NAME_BASE}_1, ${CONTAINER_NAME_BASE}_2, ${CONTAINER_NAME_BASE}_3) are already in use."  // Error if no container names are available
+                    }
+
+                    echo "Selected container name: ${containerName}"  // Output selected container name
+
+                    sh """
+                    docker run -d --name ${containerName} \\
+                      --network ${DOCKER_NETWORK} \\
+                      -p ${STEAMPIPE_PORT}:${STEAMPIPE_PORT} \\
+                      -p ${POWERPIPE_PORT}:${POWERPIPE_PORT} \\
+                      -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \\
+                      -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \\
+                      -e AWS_REGION=${AWS_REGION} \\
+                      ${IMAGE_NAME}
+                    """  // Run Docker container with environment variables and port mappings
+                }
+            }
+        }
+
+        stage('Initialize and Install Modules') {
+            // Initialize Powerpipe and install required modules inside the container
+            steps {
+                script {
+                    sh """
+                    docker exec -it ${containerName} /bin/bash -c '
+                    mkdir -p /home/powerpipe/mod && cd /home/powerpipe/mod &&
+                    powerpipe mod init &&  // Initialize Powerpipe module
+                    powerpipe mod install github.com/turbot/steampipe-mod-aws-compliance &&  // Install AWS compliance module
+                    steampipe query "select * from aws_s3_bucket;"  // Run a sample Steampipe query
+                    '
+                    """
+                }
+            }
+        }
+
+        stage('Start Services') {
+            // Start the Steampipe and Powerpipe services within the container
+            steps {
+                script {
+                    sh """
+                    docker exec -d ${containerName} /bin/bash -c '
+                    nohup steampipe service start --port ${STEAMPIPE_PORT} > /home/powerpipe/steampipe.log 2>&1 &  // Start Steampipe
+                    nohup powerpipe server --port ${POWERPIPE_PORT} > /home/powerpipe/powerpipe.log 2>&1 &  // Start Powerpipe
+                    '
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                echo "Containers created but not deleted in this pipeline run."  // Message for post-build cleanup
+            }
+        }
+    }
+}

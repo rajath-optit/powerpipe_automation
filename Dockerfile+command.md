@@ -69,8 +69,8 @@ brew install awscli
    Example:
 
    ```bash
-   AWS Access Key ID [None]: AKIAxxxxxxxxxxxxxxxx
-   AWS Secret Access Key [None]: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   AWS Access Key ID [None]: Axxx
+   AWS Secret Access Key [None]: xxxx
    Default region name [None]: ap-south-1
    Default output format [None]: json
    ```

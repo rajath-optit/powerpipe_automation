@@ -95,7 +95,7 @@ mkdir -p /home/powerpipe/mod
 cd /home/powerpipe/mod
 powerpipe mod init
 powerpipe mod install github.com/turbot/steampipe-mod-aws-compliance
-steampipe query "select  from aws_s3_bucket;"
+
 ```
 
 Then start the services using `nohup`:

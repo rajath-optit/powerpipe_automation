@@ -1,3 +1,4 @@
+# service
 ec2
 
 aws_ec2_ami
@@ -91,3 +92,12 @@ steampipe check all --where "severity in ('critical', 'high')" --export=html #to
  
  
 steampipe check all --where "severity in ('critical', 'high','midium')" #this command only work if there's
+
+
+![5b07723e-d70d-4575-983e-7282c7b17611](https://github.com/user-attachments/assets/1b55aa57-833e-4085-8c93-d4e74113878b)
+
+![cf83ed1f-56ee-4940-93ae-9eaabde35ba8](https://github.com/user-attachments/assets/070c0d99-84df-475c-9c9f-08213a78b466)
+
+
+![74fa0884-2ce9-4658-93ae-c08fe3d77849](https://github.com/user-attachments/assets/b48a8d38-87aa-47c0-91c3-b9372de079aa)
+

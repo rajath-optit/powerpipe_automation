@@ -68,3 +68,26 @@ aws_cloudtrail_query
 aws_cloudtrail_trail
 aws_cloudtrail_trail_event
 
+
+# step
+steampipe check list
+steampipe mod install github.com/turbot/steampipe-mod-aws-compliance
+ 
+ls #you should look for mod.sp
+git clone https://github.com/turbot/steampipe-mod-aws-compliance
+cd steampipe-mod-aws-compliance
+ 
+ 
+steampipe query --var=instance_state="running"
+steampipe check all --output=brief
+ 
+powerpipe benchmark run aws_compliance.benchmark.soc_2
+ 
+steampipe check benchmark.cis_v130 --tag cis_level=1 --dry-run
+  steampipe check all --where "severity in ('critical', 'high') and tags ->> 'pci' = 'true'" #can use tag given in document so get detailed report
+  steampipe check all --where "severity in ('critical', 'high') 
+  steampipe check all --where "severity in ('critical', 'high')" --output=html #to get output in html formate
+steampipe check all --where "severity in ('critical', 'high')" --export=html #to download output in html formate
+ 
+ 
+steampipe check all --where "severity in ('critical', 'high','midium')" #this command only work if there's

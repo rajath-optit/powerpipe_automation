@@ -187,3 +187,32 @@ To ensure that your log files (with `.log` extension) persist on the host machin
    Since the volume is mounted, even if you stop or delete the container, the log files stored in `/opt/powerpipedata/capitalmind/logs` on the host machine will persist. You can restart the container and continue accessing the logs.
 
 This setup ensures that all files ending with `.log` inside the container are saved in the specified host directory.
+
+# Create directories for 'rao' logs
+sudo mkdir -p /opt/powerpipedata/rao/logs
+sudo chmod 777 /opt/powerpipedata/rao/logs
+
+# Create directories for 'capitalmind' logs
+sudo mkdir -p /opt/powerpipedata/capitalmind/logs
+sudo chmod 777 /opt/powerpipedata/capitalmind/logs
+
+# Create directories for 'foradian' logs
+sudo mkdir -p /opt/powerpipedata/foradian/logs
+sudo chmod 777 /opt/powerpipedata/foradian/logs
+
+Example Structure
+Here's a visual representation of the directory structure:
+
+bash
+Copy code
+/opt/powerpipedata/
+├── capitalmind/
+│   └── logs/
+│       └── (log files for capitalmind)
+├── foradian/
+│   └── logs/
+│       └── (log files for foradian)
+└── rao/
+    └── logs/
+        └── (log files for rao)
+This structure ensures that logs from each container are organized and stored in their respective directories on the host machine.
